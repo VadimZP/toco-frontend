@@ -1,10 +1,16 @@
 import { GetServerSideProps } from "next";
 import { getCookie } from "cookies-next";
 
-import { Post } from "@/shared/types";
+import { Comment, Post } from "@/shared/types";
 import PostComponent from "@/components/Post";
 
-export default function UserPost({ post }: { post: Post }) {
+export default function UserPost({
+  post,
+  comments,
+}: {
+  post: Post;
+  comments: Comment[];
+}) {
   async function addOrRemoveLike(userId: number, postId: number) {
     try {
       const data = await fetch(
@@ -28,7 +34,13 @@ export default function UserPost({ post }: { post: Post }) {
     }
   }
 
-  return <PostComponent post={post} addOrRemoveLike={addOrRemoveLike} />;
+  return (
+    <PostComponent
+      post={post}
+      comments={comments}
+      addOrRemoveLike={addOrRemoveLike}
+    />
+  );
 }
 
 export const getServerSideProps: GetServerSideProps = async ({
@@ -71,7 +83,7 @@ export const getServerSideProps: GetServerSideProps = async ({
     };
   }
 
-  const post = await data.json();
+  const { post, comments } = await data.json();
 
-  return { props: { post } };
+  return { props: { post, comments } };
 };

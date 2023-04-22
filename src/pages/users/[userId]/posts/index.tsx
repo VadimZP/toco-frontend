@@ -11,10 +11,38 @@ export default function AllUserPosts({ posts }: { posts: Post[] }) {
     router.push(`http://localhost:3000/users/${userId}/posts/${postId}`);
   };
 
+  async function addOrRemoveLike(userId: number, postId: number) {
+    try {
+      const data = await fetch(
+        `http://localhost:3001/users/${userId}/posts/${postId}/likes`,
+        {
+          credentials: "include",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId,
+            postId,
+          }),
+        }
+      );
+      const response = await data.json();
+    } catch (error) {
+      console.error(`Error: ${error}`);
+    } finally {
+    }
+  }
+
   return (
     <>
       {posts.map((item: Post) => (
-        <PostComponent key={item.post_id} post={item} goToPostPage={goToPostPage} />
+        <PostComponent
+          key={item.post_id}
+          post={item}
+          goToPostPage={goToPostPage}
+          addOrRemoveLike={addOrRemoveLike}
+        />
       ))}
     </>
   );
