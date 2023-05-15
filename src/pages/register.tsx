@@ -95,9 +95,10 @@ export default function Auth() {
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
-  const cidCookie = getCookie("connect.sid", { req, res });
+  const userCookie = getCookie("userId", { req, res });
+  // const cidCookie = getCookie("connect.sid", { req, res });
 
-  if (cidCookie) {
+  if (userCookie) {
     return {
       redirect: {
         destination: "/",

@@ -2,9 +2,11 @@ import { useRouter } from "next/router";
 import { GetServerSideProps } from "next";
 import { Post } from "@/shared/types";
 import { getCookie } from "cookies-next";
-import PostComponent from "@/components/Post";
+import PostComponent from "@/components/Post/Post";
 
 export default function AllUserPosts({ posts }: { posts: Post[] }) {
+  const userId = getCookie("userId");
+
   const router = useRouter();
 
   const goToPostPage = (userId: number, postId: number) => {
@@ -40,6 +42,7 @@ export default function AllUserPosts({ posts }: { posts: Post[] }) {
         <PostComponent
           key={item.post_id}
           post={item}
+          userId={+userId}
           goToPostPage={goToPostPage}
           addOrRemoveLike={addOrRemoveLike}
         />
@@ -53,9 +56,10 @@ export const getServerSideProps: GetServerSideProps = async ({
   res,
   params = {},
 }) => {
-  const cidCookie = getCookie("connect.sid", { req, res });
+  // const cidCookie = getCookie("connect.sid", { req, res });
+  const userCookie = getCookie("userId", { req, res });
 
-  if (!cidCookie) {
+  if (!userCookie) {
     return {
       redirect: {
         destination: "/login",
@@ -75,7 +79,7 @@ export const getServerSideProps: GetServerSideProps = async ({
   });
 
   if (data.status === 401) {
-    res.setHeader("Set-Cookie", "connect.sid=; Max-Age=0");
+    res.setHeader("Set-Cookie", "userId=; Max-Age=0");
 
     return {
       redirect: {

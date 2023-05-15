@@ -1,6 +1,5 @@
 import {
   Button,
-  Stack,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -13,15 +12,19 @@ import {
   FormLabel,
   Input,
   Textarea,
+  VStack,
+  FormErrorMessage,
 } from "@chakra-ui/react";
 import { useRef, useState } from "react";
 import { getCookie } from "cookies-next";
 import { GetServerSideProps } from "next";
 import { Post } from "@/shared/types";
-import PostComponent from "@/components/Post";
+import PostComponent from "@/components/Post/Post";
 import { useRouter } from "next/router";
 
 export default function Home({ posts }: { posts: Post[] }) {
+  const userId = getCookie("userId");
+
   const [postsList, setPostsList] = useState(posts);
   const [isPostsListLoading, setIsPostsListLoading] = useState(false);
 
@@ -29,20 +32,62 @@ export default function Home({ posts }: { posts: Post[] }) {
 
   const initialRef = useRef(null);
 
-  const [postTitle, setPostTitle] = useState("");
-  const onPostTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    setPostTitle(inputValue);
+  const [postCreationData, setPostCreationData] = useState({
+    title: "",
+    content: "",
+  });
+
+  const onPostTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPostCreationData({ ...postCreationData, title: event.target.value });
   };
 
-  const [postContent, setPostContent] = useState("");
-  const onPostContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const inputValue = e.target.value;
-    setPostContent(inputValue);
+  const onPostContentChange = (
+    event: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    setPostCreationData({ ...postCreationData, content: event.target.value });
+  };
+
+  const [isPostCreationDataValid, setIsPostCreationDataValid] = useState<{
+    [key: string]: string;
+  }>({
+    postTitleErrorMessage: "",
+    postContentErrorMessage: "",
+  });
+
+  const handlePostTitleBlur = () => {
+    if (!postCreationData.title.length) {
+      setIsPostCreationDataValid({
+        ...isPostCreationDataValid,
+        postTitleErrorMessage: "Title field is required",
+      });
+      return;
+    }
+    setIsPostCreationDataValid({
+      ...isPostCreationDataValid,
+      postTitleErrorMessage: "",
+    });
+  };
+
+  const handlePostContentBlur = () => {
+    if (!postCreationData.content.length) {
+      setIsPostCreationDataValid({
+        ...isPostCreationDataValid,
+        postContentErrorMessage: "Content field is required",
+      });
+      return;
+    }
+    setIsPostCreationDataValid({
+      ...isPostCreationDataValid,
+      postContentErrorMessage: "",
+    });
   };
 
   async function createPost() {
+    if (!postCreationData.title.length || !postCreationData.content.length)
+      return;
+
     setIsPostsListLoading(true);
+
     try {
       const data = await fetch("http://localhost:3001/posts", {
         method: "POST",
@@ -50,11 +95,11 @@ export default function Home({ posts }: { posts: Post[] }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          content: postContent,
+          ...postCreationData,
           created_at: new Date(),
-          title: postTitle,
         }),
       });
+
       const response = await data.json();
       setPostsList((prevState) => [response, ...prevState]);
     } catch (error) {
@@ -75,7 +120,7 @@ export default function Home({ posts }: { posts: Post[] }) {
           },
           body: JSON.stringify({
             userId,
-            postId
+            postId,
           }),
         }
       );
@@ -94,68 +139,88 @@ export default function Home({ posts }: { posts: Post[] }) {
 
   return (
     <>
-      <Stack direction="row" spacing={4} align="center">
-        <Button
-          isLoading={isPostsListLoading}
-          loadingText="Loading"
-          colorScheme="teal"
-          variant="outline"
-          spinnerPlacement="start"
-          onClick={onOpen}
-        >
-          Write a post
-        </Button>
-      </Stack>
-      <>
-        <Modal initialFocusRef={initialRef} isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Create your account</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody pb={6}>
-              <FormControl>
-                <FormLabel>Title</FormLabel>
-                <Input
-                  onChange={onPostTitleChange}
-                  ref={initialRef}
-                  placeholder="First name"
-                />
-              </FormControl>
+      <Button
+        mb={3}
+        loadingText="Loading"
+        colorScheme="teal"
+        variant="outline"
+        spinnerPlacement="start"
+        onClick={onOpen}
+      >
+        Write a post
+      </Button>
+      <Modal initialFocusRef={initialRef} isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Create your account</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <FormControl
+              isInvalid={!!isPostCreationDataValid.postTitleErrorMessage}
+            >
+              <FormLabel>Title</FormLabel>
+              <Input
+                onChange={onPostTitleChange}
+                ref={initialRef}
+                onBlur={handlePostTitleBlur}
+              />
+              <FormErrorMessage>
+                {isPostCreationDataValid.postTitleErrorMessage}
+              </FormErrorMessage>
+            </FormControl>
 
-              <FormControl mt={4}>
-                <FormLabel>Content</FormLabel>
-                <Textarea
-                  onChange={onPostContentChange}
-                  placeholder="Last name"
-                />
-              </FormControl>
-            </ModalBody>
+            <FormControl
+              mt={4}
+              isInvalid={!!isPostCreationDataValid.postContentErrorMessage}
+            >
+              <FormLabel>Content</FormLabel>
+              <Textarea
+                onChange={onPostContentChange}
+                onBlur={handlePostContentBlur}
+              />
+              <FormErrorMessage>
+                {isPostCreationDataValid.postContentErrorMessage}
+              </FormErrorMessage>
+            </FormControl>
+          </ModalBody>
 
-            <ModalFooter>
-              <Button onClick={createPost} colorScheme="blue" mr={3}>
-                Save
-              </Button>
-              <Button onClick={onClose}>Cancel</Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      </>
-      {postsList.map((item: Post) => (
-        <PostComponent
-          key={item.post_id}
-          post={item}
-          goToPostPage={goToPostPage}
-          addOrRemoveLike={addOrRemoveLike}
-        />
-      ))}
+          <ModalFooter>
+            <Button
+              onClick={createPost}
+              colorScheme="blue"
+              mr={3}
+              isLoading={isPostsListLoading}
+              isDisabled={
+                !postCreationData.title.length ||
+                !postCreationData.content.length
+              }
+            >
+              Save
+            </Button>
+            <Button onClick={onClose}>Cancel</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      <VStack>
+        {postsList.map((item: Post) => (
+          <PostComponent
+            key={item.post_id}
+            post={item}
+            userId={+userId}
+            goToPostPage={goToPostPage}
+            addOrRemoveLike={addOrRemoveLike}
+          />
+        ))}
+      </VStack>
     </>
   );
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
-  const cidCookie = getCookie("connect.sid", { req, res });
+  // const cidCookie = getCookie("connect.sid", { req, res });
+  const userCookie = getCookie("userId", { req, res });
 
-  if (!cidCookie) {
+  if (!userCookie) {
     return {
       redirect: {
         destination: "/login",

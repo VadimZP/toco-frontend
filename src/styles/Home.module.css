@@ -1,9 +1,31 @@
 .main {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 6rem;
+  padding-top: 100px;
+  padding-left: 50px;
+  padding-right: 50px;
   min-height: 100vh;
+}
+
+@media screen and (min-width: 1024px) {
+  .main {
+    padding-left: 200px;
+    padding-right: 200px;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .main {
+    padding-left: 300px;
+    padding-right: 300px;
+  }
+}
+
+@media screen and (min-width: 1440px) {
+  .main {
+    padding-left: 450px;
+    padding-right: 450px;
+  }
 }
 
 .description {
@@ -96,7 +118,7 @@
 
 .center::before,
 .center::after {
-  content: '';
+  content: "";
   left: 50%;
   position: absolute;
   filter: blur(45px);
@@ -124,7 +146,7 @@
 
 .thirteen::before,
 .thirteen::after {
-  content: '';
+  content: "";
   position: absolute;
   z-index: -1;
 }
