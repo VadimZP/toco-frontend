@@ -14,7 +14,6 @@ import { getCookie } from "cookies-next";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { MdOutlineAlternateEmail } from "react-icons/md";
-import UserContext from "@/contexts/UserContext";
 
 interface PasswordInputProps {
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -134,7 +133,7 @@ export default function Auth() {
       });
 
       const status = data.status;
-      if (status === 200) {
+      if (status === 200 || status === 201) {
         router.replace("http://localhost:3000/");
       }
     } catch (error) {

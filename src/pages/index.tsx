@@ -16,24 +16,23 @@ import {
   Text,
   StackDivider,
   Box,
+  NumberInput,
+  NumberInputField,
 } from "@chakra-ui/react";
 import { useRef, useState } from "react";
 import { getCookie } from "cookies-next";
 import { GetServerSideProps } from "next";
-import { Post } from "@/shared/types";
-import PostComponent from "@/components/Post/Post";
 
-export default function Home({ userDetails } /* : { posts: Post[] } */) {
+export default function Home({ userDetails }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const initialRef = useRef(null);
 
-  // const [postsList, setPostsList] = useState(posts);
   const [isTransactionLoading, setIsTransactionLoading] = useState(false);
 
   const [transactionData, setTransactionData] = useState({
     receiver_username: "",
-    amount: null,
+    amount: 0,
   });
 
   const onReceiverUsernameChange = (
@@ -73,7 +72,7 @@ export default function Home({ userDetails } /* : { posts: Post[] } */) {
   };
 
   const handleTransactionAmountBlur = () => {
-    if (transactionData.amount <= 0 || transactionData.amount === null) {
+    if (transactionData.amount <= 0) {
       setIsTransactionDataValid({
         ...isTransactionDataValid,
         transactionAmountErrorMessage: "Amount should not be empty or zero",
@@ -89,7 +88,7 @@ export default function Home({ userDetails } /* : { posts: Post[] } */) {
   async function sendFunds() {
     if (
       !transactionData.receiver_username.length ||
-      transactionData.amount === null
+      transactionData.amount === 0
     )
       return;
 
@@ -108,6 +107,8 @@ export default function Home({ userDetails } /* : { posts: Post[] } */) {
       });
 
       const response = await data.json();
+
+      alert(response.message)
     } catch (error) {
       console.error(`Error: ${error}`);
     } finally {
@@ -167,10 +168,12 @@ export default function Home({ userDetails } /* : { posts: Post[] } */) {
               isInvalid={!!isTransactionDataValid.transactionAmountErrorMessage}
             >
               <FormLabel>Amount</FormLabel>
-              <Input
-                onChange={onTransactionAmountChange}
-                onBlur={handleTransactionAmountBlur}
-              />
+              <NumberInput defaultValue={0} precision={2}>
+                <NumberInputField
+                  onChange={onTransactionAmountChange}
+                  onBlur={handleTransactionAmountBlur}
+                />
+              </NumberInput>
               <FormErrorMessage>
                 {isTransactionDataValid.transactionAmountErrorMessage}
               </FormErrorMessage>
@@ -185,7 +188,9 @@ export default function Home({ userDetails } /* : { posts: Post[] } */) {
               isLoading={isTransactionLoading}
               isDisabled={
                 !transactionData.receiver_username.length ||
-                transactionData.amount === null
+                transactionData.amount === 0 ||
+                isTransactionDataValid.receiverUsernameErrorMessage.length ||
+                isTransactionDataValid.transactionAmountErrorMessage.length
               }
             >
               Save
@@ -194,18 +199,6 @@ export default function Home({ userDetails } /* : { posts: Post[] } */) {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/*
-      <VStack>
-        {postsList.map((item: Post) => (
-          <PostComponent
-            key={item.post_id}
-            post={item}
-            userId={+userId}
-            goToPostPage={goToPostPage}
-            addOrRemoveLike={addOrRemoveLike}
-          />
-        ))}
-      </VStack> */}
     </>
   );
 }
