@@ -1,7 +1,6 @@
 .main {
   display: flex;
   flex-direction: column;
-  padding-top: 100px;
   padding-left: 50px;
   padding-right: 50px;
   min-height: 100vh;

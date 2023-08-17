@@ -11,134 +11,126 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Textarea,
   VStack,
   FormErrorMessage,
+  Text,
+  StackDivider,
+  Box,
 } from "@chakra-ui/react";
 import { useRef, useState } from "react";
 import { getCookie } from "cookies-next";
 import { GetServerSideProps } from "next";
 import { Post } from "@/shared/types";
 import PostComponent from "@/components/Post/Post";
-import { useRouter } from "next/router";
 
-export default function Home({ posts }: { posts: Post[] }) {
-  const userId = getCookie("userId");
-
-  const [postsList, setPostsList] = useState(posts);
-  const [isPostsListLoading, setIsPostsListLoading] = useState(false);
-
+export default function Home({ userDetails } /* : { posts: Post[] } */) {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const initialRef = useRef(null);
 
-  const [postCreationData, setPostCreationData] = useState({
-    title: "",
-    content: "",
+  // const [postsList, setPostsList] = useState(posts);
+  const [isTransactionLoading, setIsTransactionLoading] = useState(false);
+
+  const [transactionData, setTransactionData] = useState({
+    receiver_username: "",
+    amount: null,
   });
 
-  const onPostTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPostCreationData({ ...postCreationData, title: event.target.value });
-  };
-
-  const onPostContentChange = (
-    event: React.ChangeEvent<HTMLTextAreaElement>
+  const onReceiverUsernameChange = (
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setPostCreationData({ ...postCreationData, content: event.target.value });
+    setTransactionData({
+      ...transactionData,
+      receiver_username: event.target.value,
+    });
   };
 
-  const [isPostCreationDataValid, setIsPostCreationDataValid] = useState<{
+  const onTransactionAmountChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setTransactionData({ ...transactionData, amount: +event.target.value });
+  };
+
+  const [isTransactionDataValid, setIsTransactionDataValid] = useState<{
     [key: string]: string;
   }>({
-    postTitleErrorMessage: "",
-    postContentErrorMessage: "",
+    receiverUsernameErrorMessage: "",
+    transactionAmountErrorMessage: "",
   });
 
-  const handlePostTitleBlur = () => {
-    if (!postCreationData.title.length) {
-      setIsPostCreationDataValid({
-        ...isPostCreationDataValid,
-        postTitleErrorMessage: "Title field is required",
+  const handleReceiverUsernameBlur = () => {
+    if (!transactionData.receiver_username.length) {
+      setIsTransactionDataValid({
+        ...isTransactionDataValid,
+        receiverUsernameErrorMessage: "Username is required",
       });
       return;
     }
-    setIsPostCreationDataValid({
-      ...isPostCreationDataValid,
-      postTitleErrorMessage: "",
+    setIsTransactionDataValid({
+      ...isTransactionDataValid,
+      receiverUsernameErrorMessage: "",
     });
   };
 
-  const handlePostContentBlur = () => {
-    if (!postCreationData.content.length) {
-      setIsPostCreationDataValid({
-        ...isPostCreationDataValid,
-        postContentErrorMessage: "Content field is required",
+  const handleTransactionAmountBlur = () => {
+    if (transactionData.amount <= 0 || transactionData.amount === null) {
+      setIsTransactionDataValid({
+        ...isTransactionDataValid,
+        transactionAmountErrorMessage: "Amount should not be empty or zero",
       });
       return;
     }
-    setIsPostCreationDataValid({
-      ...isPostCreationDataValid,
-      postContentErrorMessage: "",
+    setIsTransactionDataValid({
+      ...isTransactionDataValid,
+      transactionAmountErrorMessage: "",
     });
   };
 
-  async function createPost() {
-    if (!postCreationData.title.length || !postCreationData.content.length)
+  async function sendFunds() {
+    if (
+      !transactionData.receiver_username.length ||
+      transactionData.amount === null
+    )
       return;
 
-    setIsPostsListLoading(true);
+    setIsTransactionLoading(true);
 
     try {
-      const data = await fetch("http://localhost:3001/posts", {
+      const data = await fetch("http://localhost:3001/transactions", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...postCreationData,
-          created_at: new Date(),
+          ...transactionData,
         }),
       });
 
       const response = await data.json();
-      setPostsList((prevState) => [response, ...prevState]);
     } catch (error) {
       console.error(`Error: ${error}`);
     } finally {
-      setIsPostsListLoading(false);
+      setIsTransactionLoading(false);
     }
   }
-  async function addOrRemoveLike(userId: number, postId: number) {
-    try {
-      const data = await fetch(
-        `http://localhost:3001/users/${userId}/posts/${postId}/likes`,
-        {
-          credentials: "include",
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId,
-            postId,
-          }),
-        }
-      );
-      const response = await data.json();
-    } catch (error) {
-      console.error(`Error: ${error}`);
-    } finally {
-    }
-  }
-
-  const router = useRouter();
-
-  const goToPostPage = (userId: number, postId: number) => {
-    router.push(`http://localhost:3000/users/${userId}/posts/${postId}`);
-  };
 
   return (
     <>
+      <VStack
+        divider={<StackDivider borderColor="gray.200" />}
+        spacing={4}
+        align="stretch"
+      >
+        <Box>
+          <Text as="b">Username:</Text>
+          <Text>{userDetails.username}</Text>
+        </Box>
+        <Box>
+          <Text as="b">Balance:</Text>
+          <Text>{userDetails.balance}</Text>
+        </Box>
+      </VStack>
       <Button
         mb={3}
         loadingText="Loading"
@@ -147,8 +139,9 @@ export default function Home({ posts }: { posts: Post[] }) {
         spinnerPlacement="start"
         onClick={onOpen}
       >
-        Write a post
+        Send funds
       </Button>
+
       <Modal initialFocusRef={initialRef} isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
@@ -156,43 +149,43 @@ export default function Home({ posts }: { posts: Post[] }) {
           <ModalCloseButton />
           <ModalBody pb={6}>
             <FormControl
-              isInvalid={!!isPostCreationDataValid.postTitleErrorMessage}
+              isInvalid={!!isTransactionDataValid.receiverUsernameErrorMessage}
             >
-              <FormLabel>Title</FormLabel>
+              <FormLabel>Receiver username</FormLabel>
               <Input
-                onChange={onPostTitleChange}
+                onChange={onReceiverUsernameChange}
                 ref={initialRef}
-                onBlur={handlePostTitleBlur}
+                onBlur={handleReceiverUsernameBlur}
               />
               <FormErrorMessage>
-                {isPostCreationDataValid.postTitleErrorMessage}
+                {isTransactionDataValid.receiverUsernameErrorMessage}
               </FormErrorMessage>
             </FormControl>
 
             <FormControl
               mt={4}
-              isInvalid={!!isPostCreationDataValid.postContentErrorMessage}
+              isInvalid={!!isTransactionDataValid.transactionAmountErrorMessage}
             >
-              <FormLabel>Content</FormLabel>
-              <Textarea
-                onChange={onPostContentChange}
-                onBlur={handlePostContentBlur}
+              <FormLabel>Amount</FormLabel>
+              <Input
+                onChange={onTransactionAmountChange}
+                onBlur={handleTransactionAmountBlur}
               />
               <FormErrorMessage>
-                {isPostCreationDataValid.postContentErrorMessage}
+                {isTransactionDataValid.transactionAmountErrorMessage}
               </FormErrorMessage>
             </FormControl>
           </ModalBody>
 
           <ModalFooter>
             <Button
-              onClick={createPost}
+              onClick={sendFunds}
               colorScheme="blue"
               mr={3}
-              isLoading={isPostsListLoading}
+              isLoading={isTransactionLoading}
               isDisabled={
-                !postCreationData.title.length ||
-                !postCreationData.content.length
+                !transactionData.receiver_username.length ||
+                transactionData.amount === null
               }
             >
               Save
@@ -201,6 +194,7 @@ export default function Home({ posts }: { posts: Post[] }) {
           </ModalFooter>
         </ModalContent>
       </Modal>
+      {/*
       <VStack>
         {postsList.map((item: Post) => (
           <PostComponent
@@ -211,16 +205,15 @@ export default function Home({ posts }: { posts: Post[] }) {
             addOrRemoveLike={addOrRemoveLike}
           />
         ))}
-      </VStack>
+      </VStack> */}
     </>
   );
 }
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
-  // const cidCookie = getCookie("connect.sid", { req, res });
-  const userCookie = getCookie("userId", { req, res });
+  const userId = getCookie("userId", { req, res });
 
-  if (!userCookie) {
+  if (userId == null) {
     return {
       redirect: {
         destination: "/login",
@@ -233,12 +226,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     ? { cookie: req.headers.cookie }
     : undefined;
 
-  const data = await fetch("http://localhost:3001/posts", {
+  const data = await fetch(`http://localhost:3001/users/${userId}`, {
     headers,
   });
 
   if (data.status === 401) {
-    res.setHeader("Set-Cookie", "connect.sid=; Max-Age=0");
+    res.setHeader("Set-Cookie", "userId=; Max-Age=0");
 
     return {
       redirect: {
@@ -248,7 +241,7 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     };
   }
 
-  const posts = await data.json();
+  const userDetails = await data.json();
 
-  return { props: { posts } };
+  return { props: { userDetails } };
 };

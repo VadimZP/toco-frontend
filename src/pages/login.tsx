@@ -63,40 +63,41 @@ export default function Auth() {
   const router = useRouter();
 
   const [userCredentials, setUserCredentials] = useState({
-    email: "",
+    username: "",
     password: "",
   });
 
   const [isInputValid, setIsInputValid] = useState<{
     [key: string]: string;
   }>({
-    emailErrorMessage: "",
+    usernameErrorMessage: "",
     passwordErrorMessage: "",
   });
 
   const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setUserCredentials({ ...userCredentials, email: event.target.value });
+    setUserCredentials({ ...userCredentials, username: event.target.value });
   };
 
-  const handleEmailBlur = () => {
-    const isValidEmail = validateEmail(userCredentials.email);
-    if (!userCredentials.email.length) {
+  const handleUsernameBlur = () => {
+    const isValidUsername = userCredentials.username.length > 1;
+
+    if (!userCredentials.username.length) {
       setIsInputValid({
         ...isInputValid,
-        emailErrorMessage: "Email field is required",
+        usernameErrorMessage: "Username field is required",
       });
       return;
     }
-    if (!isValidEmail) {
+    if (!isValidUsername) {
       setIsInputValid({
         ...isInputValid,
-        emailErrorMessage: "Email is incorrect",
+        usernameErrorMessage: "Username is incorrect",
       });
       return;
     }
     setIsInputValid({
       ...isInputValid,
-      emailErrorMessage: "",
+      usernameErrorMessage: "",
     });
   };
 
@@ -105,7 +106,7 @@ export default function Auth() {
   };
 
   const handlePasswordBlur = () => {
-    const isValidPassword = userCredentials.password.length > 0;
+    const isValidPassword = userCredentials.password.length >= 6;
     if (!isValidPassword) {
       setIsInputValid({
         ...isInputValid,
@@ -120,14 +121,14 @@ export default function Auth() {
 
   async function handleAuth() {
     try {
-      const data = await fetch("http://localhost:3001/login", {
+      const data = await fetch("http://localhost:3001/users/", {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: userCredentials.email,
+          username: userCredentials.username,
           password: userCredentials.password,
         }),
       });
@@ -144,23 +145,23 @@ export default function Auth() {
 
   return (
     <Stack spacing={6} w={500} alignSelf="center" m="200px auto">
-      <FormControl isInvalid={!!isInputValid.emailErrorMessage}>
-        <FormLabel htmlFor="emailInput">Email</FormLabel>
+      <FormControl isInvalid={!!isInputValid.usernameErrorMessage}>
+        <FormLabel htmlFor="usernameInput">Username</FormLabel>
         <InputGroup>
           <InputRightElement pointerEvents="none">
             <MdOutlineAlternateEmail />
           </InputRightElement>
           <Input
-            id="emailInput"
-            type="email"
-            name="email"
-            value={userCredentials.email}
+            id="usernameInput"
+            type="username"
+            name="username"
+            value={userCredentials.username}
             onChange={handleEmailChange}
-            onBlur={handleEmailBlur}
-            placeholder="Enter email"
+            onBlur={handleUsernameBlur}
+            placeholder="Enter username"
           />
         </InputGroup>
-        <FormErrorMessage>{isInputValid.emailErrorMessage}</FormErrorMessage>
+        <FormErrorMessage>{isInputValid.usernameErrorMessage}</FormErrorMessage>
       </FormControl>
       <PasswordInput
         passwordErrorMessage={isInputValid.passwordErrorMessage}
